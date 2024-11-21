@@ -1,3 +1,6 @@
+"""
+Defines classes that handle logic related to simulating temperature changes in the cooler.
+"""
 from enum import Enum
 import random
 from abc import ABC, abstractmethod
@@ -32,11 +35,13 @@ class CoolerInstance(ABC):
             return True
         else:
             return False
-    
+
     @abstractmethod
     def evaluate_comp_on_off(self) -> float:
         """
-        Method for evaluating whether the compressor should be turned on. This method varies in children.
+        Method for evaluating whether the compressor should be turned on. 
+        
+        This method varies in children.
         """
         return False
 
@@ -50,34 +55,36 @@ class CoolerInstance(ABC):
 
         while tick_counter < 8640:
             self.simulate_tick(tick_counter)
-            tick_counter += 1       
+            tick_counter += 1
         return np.sum(self.food_loss_expenses) + np.sum(self.power_expenses)
 
     def simulate_tick(self, count) -> tuple:
         """
         Logic for a 5 minute interval. 
-        Calculates the current temperature, based on whether the door is open and whether the compressor is on.
+        Calculates the current temperature, based on whether 
+        the door is open and whether the compressor is on.
         """
         door_open = self.is_door_open()
         last_temp = self.temperature_history[count-1]
         if door_open and self.evaluate_comp_on_off():
-            T = last_temp + (0.0000005 * (20-last_temp) + 0.000008 * (-5 - last_temp)) * 300
-            self.door_state_history[count] = True
+            t = last_temp + (0.0000005 * (20-last_temp) + 0.000008 * (-5 - last_temp)) * 300
+            #self.door_state_history[count] = True
             self.power_expenses[count] = self.power_prices[count]
-            self.compressor_state_history[count] = True
+            #self.compressor_state_history[count] = True
         elif door_open:
-            T = last_temp + (0.0000005 * (20-last_temp)) * 300
+            t = last_temp + (0.0000005 * (20-last_temp)) * 300
             self.power_expenses[count] = 0.0
-            self.door_state_history[count] = True
-            self.compressor_state_history[count] = False
+            #self.door_state_history[count] = True
+            #self.compressor_state_history[count] = False
         else:
-            T = last_temp + (0.00003 * (20-last_temp) + 0.000008 * (-5 - last_temp)) * 300
+            t = last_temp + (0.00003 * (20-last_temp) + 0.000008 * (-5 - last_temp)) * 300
             self.power_expenses[count] = self.power_prices[count]
-            self.compressor_state_history[count] = True
-            self.door_state_history[count] = False       
-        self.temperature_history[count] = T
+            #self.compressor_state_history[count] = True
+            #self.door_state_history[count] = False
+        self.temperature_history[count] = t
+        self.current_temperature = t
 
-        self.food_loss_expenses[count] = self.calculate_food_loss_expense(T)
+        self.food_loss_expenses[count] = self.calculate_food_loss_expense(t)
 
     def calculate_food_loss_expense(self, temp):
         """
@@ -98,10 +105,7 @@ class SimpleCooler(CoolerInstance):
         """
         The simple cooler deciding whether to turn on the compressor.
         """
-        if self.current_temperature < 5:
-            return True
-        else:
-            return False
+        return self.current_temperature < 5
 
 class ThermostatType(Enum):
     """
