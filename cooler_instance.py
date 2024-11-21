@@ -1,9 +1,14 @@
 from enum import Enum
-import numpy as np
-from abc import ABC, abstractmethod
 import random
+from abc import ABC, abstractmethod
+import numpy as np
+
+
 
 class CoolerInstance(ABC):
+    """
+    Abstract baseclass with all cooler room methods
+    """
     def __init__(self, power_prices):
         self.tick_counter = 1
 
@@ -45,10 +50,7 @@ class CoolerInstance(ABC):
 
         while tick_counter < 8640:
             self.simulate_tick(tick_counter)
-            tick_counter += 1
-        
-        self.already_simulated = True
-        
+            tick_counter += 1       
         return np.sum(self.food_loss_expenses) + np.sum(self.power_expenses)
 
     def simulate_tick(self, count) -> tuple:
@@ -72,12 +74,11 @@ class CoolerInstance(ABC):
             T = last_temp + (0.00003 * (20-last_temp) + 0.000008 * (-5 - last_temp)) * 300
             self.power_expenses[count] = self.power_prices[count]
             self.compressor_state_history[count] = True
-            self.door_state_history[count] = False
-        
+            self.door_state_history[count] = False       
         self.temperature_history[count] = T
 
         self.food_loss_expenses[count] = self.calculate_food_loss_expense(T)
-    
+
     def calculate_food_loss_expense(self, temp):
         """
         Calculates the expense of food loss in a 5 minute period, at the input temperature
@@ -89,10 +90,10 @@ class CoolerInstance(ABC):
         else:
             return (0.11 * np.e)**(0.31 * temp)
 
-
-    
-
 class SimpleCooler(CoolerInstance):
+    """
+    A thermostatcontroller that turns on when temperature < 5
+    """
     def evaluate_comp_on_off(self) -> bool:
         """
         The simple cooler deciding whether to turn on the compressor.
@@ -103,4 +104,7 @@ class SimpleCooler(CoolerInstance):
             return False
 
 class ThermostatType(Enum):
+    """
+    An enumerator that returns the corresponding class
+    """
     SIMPLE = SimpleCooler

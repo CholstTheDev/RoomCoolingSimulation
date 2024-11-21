@@ -1,19 +1,20 @@
 """
 This program runs a simulation
 """
-import yaml
 import doctest
-import CoolerClasses as cc
+import yaml
+
 import numpy as np
+
+import cooler_instance as cc
 
 def load_config() -> dict:
     """
     Reads the config from config.yaml
     """
     try:
-        with open("config.yaml", "r") as file:
-            config = yaml.safe_load(file)
-            return config
+        with open("config.yaml", "r", encoding="utf=8") as file:
+            return yaml.safe_load(file)
     except yaml.YAMLError as e:
         print(f"Error reading YAML file: {e}")
 
@@ -24,31 +25,28 @@ def load_power_prices() -> np.array:
     """
     try:
         return np.genfromtxt("elpris.csv", skip_header=1, usecols=1, dtype=float, delimiter=',')
-    except np.errstate as e:
+    except (OSError, ValueError) as e:
         print(f"Error reading CSV: {e}")
 
-def instantiate_from_enum(enum_value: str, power_prices) -> cc.CoolerInstance:
+def instantiate_from_enum(enum_value: str) -> cc.CoolerInstance:
     """
     Points a string to a class definition.
     """
     try:
         # Get the Enum member by the string and get the associated class
         thermostat_class = cc.ThermostatType[enum_value].value
-        return thermostat_class(power_prices)
-    except KeyError:
-        raise ValueError(f"Invalid ThermostatType: {enum_value}")
+        return thermostat_class
+    except KeyError as exc:
+        raise ValueError(f"Invalid ThermostatType: {enum_value}") from exc
 
 if __name__ == "__main__":
-    """
-    If this script is named main, run this.
-    """
     print("Reading config from config.yaml...")
     config = load_config() # Loads 'config.yaml'
     print("Reading power prices...")
     power_prices = load_power_prices()
 
     print("Instantiating class...")
-    cooler = instantiate_from_enum(config["Thermostat type"], power_prices)
+    cooler = instantiate_from_enum(config["Thermostat type"])(power_prices)
 
     print(f"Running simulation for {config['Simulation steps']} steps (months)...")
     expenses_per_month = np.zeros(config["Simulation steps"], dtype=float)
@@ -57,7 +55,4 @@ if __name__ == "__main__":
         expenses_per_month[counter] = cooler.simulate_month()
         counter += 1
 
-    print(f"Average expense over {config['Simulation steps']} months: {int(np.average(expenses_per_month))} kr. \nThermostat type: {config['Thermostat type']}")
-
-
-
+    print(f"Average expense over {config['Simulation steps']} months: {int(np.average(expenses_per_month))} kr. \n Thermostat type: {config['Thermostat type']}")
