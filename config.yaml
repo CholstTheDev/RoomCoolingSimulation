@@ -1,3 +1,3 @@
 doctest: "Test string"
-ThermoType: "SIMPLE" # Supports: "SIMPLE", ""
+Thermostat type: "SIMPLE" # Supports: "SIMPLE", ""
 Simulation steps: 100

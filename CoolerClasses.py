@@ -50,7 +50,7 @@ class CoolerInstance(ABC):
         
         self.already_simulated = True
         
-        return (np.sum(self.food_loss_expenses), np.sum(self.power_expenses))
+        return np.sum(self.food_loss_expenses) + np.sum(self.power_expenses)
 
     def simulate_tick(self, count) -> tuple:
         door_open = self.is_door_open()
