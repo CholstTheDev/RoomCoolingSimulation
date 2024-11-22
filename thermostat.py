@@ -43,8 +43,21 @@ class OpportunistThermostat(Thermostat):
 
     def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
         if room.power_prices[room.tick_counter] < self.price_threshold and room.current_temperature > self.lowest_allowed_temp:
+            #print(f"Bargain! {room.power_prices[room.tick_counter]}")
             return True
         return room.current_temperature > self.highest_allowed_temp
+
+class BargainThermostat(Thermostat):
+    """
+    This thermostat loves cheap energy, always turns on when it is cheap
+    """
+    def __init__(self, config: dict):
+        self.config = config
+        self.price_threshold = self.config["BARGAIN"]["PRICE_THRESHOLD"]
+
+    def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
+        return room.power_prices[room.tick_counter] < self.price_threshold
+        
 
 class ThermostatType(Enum):
     """
@@ -52,4 +65,5 @@ class ThermostatType(Enum):
     """
     SIMPLE = SimpleThermostat
     OPPORTUNIST = OpportunistThermostat
+    BARGAIN = BargainThermostat
 

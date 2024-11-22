@@ -44,11 +44,11 @@ class CoolerInstance():
         """
         self.temperature_history[0] = 5.0
 
-        tick_counter = 1
+        self.tick_counter = 1
 
-        while tick_counter < 8640:
-            self.simulate_tick(tick_counter)
-            tick_counter += 1
+        while self.tick_counter < 8640:
+            self.simulate_tick(self.tick_counter)
+            self.tick_counter += 1
         return (np.sum(self.food_loss_expenses), np.sum(self.power_expenses))
 
     def simulate_tick(self, count) -> tuple:

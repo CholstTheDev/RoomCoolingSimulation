@@ -5,7 +5,10 @@ Simulation steps: 100
 SIMPLE: # The basic thermostat, turns on when the temperature is above 5 degrees
   TEMP: 5
 
-OPPORTUNIST:
+OPPORTUNIST: # Supercools the room to LOW_TEMP if power costs less than PRICE_OPPORTUNITY_THRESHOLD. Will turn on at HIGH_TEMP.
   LOW_TEMP: 3.6
-  HIGH_TEMP: 6
+  HIGH_TEMP: 6.2
   PRICE_OPPORTUNITY_THRESHOLD: 2
+
+BARGAIN: # Just buys whenever power is cheaper than PRICE_THRESHOLD. VERY bad.
+  PRICE_THRESHOLD: 1.5
