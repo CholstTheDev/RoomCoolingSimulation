@@ -1,7 +1,7 @@
 doctest: "Test string"
-Thermostat type: "OPPORTUNIST" # Supports: "SIMPLE", ""
-Multisim: False
-Simulation steps: 100
+Thermostat type: "DESPERATION_OPPORTUNIST" # Supports: "SIMPLE", ""
+Multisim: True
+Simulation steps: 1000
 
 SIMPLE: # The basic thermostat, turns on when the temperature is above 5 degrees
   TEMP: 6 # Set at 6 degrees, they are within the budget
@@ -13,3 +13,5 @@ OPPORTUNIST: # Supercools the room to LOW_TEMP if power costs less than PRICE_OP
 
 BARGAIN: # Just buys whenever power is cheaper than PRICE_THRESHOLD. VERY bad.
   PRICE_THRESHOLD: 1.5
+
+DESPERATION:

@@ -4,6 +4,8 @@ Holds the abstract class "thermostats", from which all thermostat types inherit.
 from enum import Enum
 from abc import ABC, abstractmethod
 
+import numpy as np
+
 import cooler_instance
 
 
@@ -56,7 +58,47 @@ class BargainThermostat(Thermostat):
 
     def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
         return room.power_prices[room.tick_counter] < self.price_threshold
+
+class DesperationThermostat(Thermostat):
+    """
+    This thermostat gets desperate when when the temperature becomes too high, and becomes more willing to buy expensive power
+    """
+    def __init__(self, config: dict):
+        self.config = config
+
+        self.lowest_temperature = 3.5
+        self.highest_temperature = 6.3
+
+        self.lowest_price = 0.015
+        self.highest_price = 3 #Max value in set: 5.429 
+
+    def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
+        price_point = (room.current_temperature - self.lowest_temperature) / (self.highest_temperature - self.lowest_temperature) * (self.highest_price - self.lowest_price) + self.lowest_price
+        return room.power_prices[room.tick_counter] < price_point
+
+class DesperationOpportunistThermostat(Thermostat):
+    """
+    This thermostat mixes the DESPERATION thermostat and the OPPORTUNIST thermostat
+    """
+    def __init__(self, config: dict):
+        self.config = config
+
+        self.lowest_temperature = 3.5
+        self.highest_temperature = 6.3
+
+        self.lowest_price = 0.015
+        self.highest_price = 3 #Max value in set: 5.429 
+
+    def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
+        price_point = (room.current_temperature - self.lowest_temperature) / (self.highest_temperature - self.lowest_temperature) * (self.highest_price - self.lowest_price) + self.lowest_price
         
+        if (room.power_prices[room.tick_counter] < 0.5 and room.current_temperature > self.lowest_temperature):
+            return True
+        elif room.current_temperature > 6.3:
+            return True
+        else:
+            return room.power_prices[room.tick_counter] < price_point
+
 
 class ThermostatType(Enum):
     """
@@ -65,4 +107,6 @@ class ThermostatType(Enum):
     SIMPLE = SimpleThermostat
     OPPORTUNIST = OpportunistThermostat
     BARGAIN = BargainThermostat
+    DESPERATION = DesperationThermostat
+    DESPERATION_OPPORTUNIST = DesperationOpportunistThermostat
 
