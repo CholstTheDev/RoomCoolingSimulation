@@ -1,9 +1,10 @@
 doctest: "Test string"
 Thermostat type: "OPPORTUNIST" # Supports: "SIMPLE", ""
+Multisim: False
 Simulation steps: 100
 
 SIMPLE: # The basic thermostat, turns on when the temperature is above 5 degrees
-  TEMP: 5
+  TEMP: 6 # Set at 6 degrees, they are within the budget
 
 OPPORTUNIST: # Supercools the room to LOW_TEMP if power costs less than PRICE_OPPORTUNITY_THRESHOLD. Will turn on at HIGH_TEMP.
   LOW_TEMP: 3.6

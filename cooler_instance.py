@@ -24,7 +24,7 @@ class CoolerInstance():
         self.power_prices = power_prices
 
         self.temperature_history = np.zeros(8640)
-        self.temperature_history[0] = self.current_temperature
+        #self.temperature_history[0] = self.current_temperature
 
         self.food_loss_expenses = np.zeros(8640)
         self.power_expenses = np.zeros(8640)
@@ -38,18 +38,22 @@ class CoolerInstance():
         else:
             return False
 
-    def simulate_month(self) -> float:
+    def simulate_month(self, include_all_data: bool) -> float:
         """
         Simulates the coolerroom for a month, returns the total expenses
         """
         self.temperature_history[0] = 5.0
 
-        self.tick_counter = 1
+        self.tick_counter = 0
 
         while self.tick_counter < 8640:
             self.simulate_tick(self.tick_counter)
             self.tick_counter += 1
-        return (np.sum(self.food_loss_expenses), np.sum(self.power_expenses))
+        
+        if include_all_data:
+            return (self.food_loss_expenses, self.power_expenses, self.temperature_history, self.door_state_history, self.compressor_state_history)
+        else:
+            return (np.sum(self.food_loss_expenses), np.sum(self.power_expenses))
 
     def simulate_tick(self, count) -> tuple:
         """
@@ -57,7 +61,10 @@ class CoolerInstance():
         Calculates the current temperature, based on whether 
         the door is open and whether the compressor is on.
         """
-        last_temp = self.temperature_history[count-1] # Get the last temperature
+        if count == 0:
+            last_temp = 5
+        else:
+            last_temp = self.temperature_history[count-1] # Get the last temperature
 
         door_open = self.is_door_open() # Randomly decide if the door is open
         comp_on = self.thermostat_instance.evaluate_cooler_state(self) # Evaluate whether the cooler should be on
@@ -67,19 +74,19 @@ class CoolerInstance():
         # but on the scale of 1000s of simulations, it could make a difference.
         if door_open and comp_on: # If both the door is open, and the compressor is on
             t = last_temp + (0.00003 * (20-last_temp) + 0.000008 * (-5 - last_temp)) * 300 # Calculate the temperature as this
-            #self.door_state_history[count] = True # Add this to the history
-            #self.compressor_state_history[count] = True # And this
+            self.door_state_history[count] = True # Add this to the history
+            self.compressor_state_history[count] = True # And this
             self.power_expenses[count] = self.power_prices[count] # Add the price of power at this moment to the history of prices
         elif door_open:
             t = last_temp + (0.00003 * (20-last_temp)) * 300
             self.power_expenses[count] = 0.0
-            #self.door_state_history[count] = True
-            #self.compressor_state_history[count] = False
+            self.door_state_history[count] = True
+            self.compressor_state_history[count] = False
         elif comp_on:
             t = last_temp + (0.0000005 * (20-last_temp) + 0.000008 * (-5 - last_temp)) * 300
             self.power_expenses[count] = self.power_prices[count]
-            #self.compressor_state_history[count] = True
-            #self.door_state_history[count] = False
+            self.compressor_state_history[count] = True
+            self.door_state_history[count] = False
         else:
             t = last_temp + (0.0000005 * (20-last_temp)) * 300
             self.power_expenses[count] = 0.0

@@ -9,7 +9,7 @@ import numpy as np
 
 import cooler_instance as ci
 import thermostat as therm
-#import visualisation as vis
+import visualisation as vis
 
 def load_config() -> dict:
     """
@@ -27,7 +27,7 @@ def load_power_prices() -> np.array:
     Reads the power price history from 'elpris.csv'
     """
     try:
-        return np.genfromtxt("elpris.csv", skip_header=1, usecols=1, dtype=float, delimiter=',')
+        return np.genfromtxt("elpris.csv", skip_header=1, skip_footer=1, usecols=1, dtype=float, delimiter=',')
     except (OSError, ValueError) as e:
         print(f"Error reading CSV: {e}")
 
@@ -47,24 +47,37 @@ if __name__ == "__main__":
     config = load_config() # Loads 'config.yaml'
     print("Reading power prices...")
     power_prices = load_power_prices()
+    print(power_prices[0])
 
     print("Instantiating classes...")
     thermostat = instantiate_thermostat_from_enum(config["Thermostat type"])(config)
     cooler = ci.CoolerInstance(thermostat, power_prices)
 
-    print(f"Running simulation for {config['Simulation steps']} steps (months)...")
-    food_expenses_per_month = np.zeros(config["Simulation steps"], dtype=float)
-    power_expenses_per_month = np.zeros(config["Simulation steps"], dtype=float)
-    start_time = time.time()
-    counter = 0
-    while counter < config["Simulation steps"]:
-        values = cooler.simulate_month()
-        food_expenses_per_month[counter] = values[0]
-        power_expenses_per_month[counter] = values[1]
-        counter += 1
-    elapsed_time = time.time() - start_time
+    if config["Multisim"]:
+        print(f"Running simulation for {config['Simulation steps']} steps (months)...")
+        food_expenses_per_month = np.zeros(config["Simulation steps"], dtype=float)
+        power_expenses_per_month = np.zeros(config["Simulation steps"], dtype=float)
+        start_time = time.time()
+        counter = 0
+        while counter < config["Simulation steps"]:
+            values = cooler.simulate_month(False)
+            food_expenses_per_month[counter] = values[0]
+            power_expenses_per_month[counter] = values[1]
+            counter += 1
+        elapsed_time = time.time() - start_time
 
-    print(f"Average food expense over {config['Simulation steps']} months: {int(np.average(food_expenses_per_month))} kr.")
-    print(f"Average power expense over {config['Simulation steps']} months: {int(np.average(power_expenses_per_month))} kr. ")
-    print(f"Thermostat type: {config['Thermostat type']}")
-    print(f"Took {elapsed_time.__round__(2)} seconds")
+        print(f"Average food expense over {config['Simulation steps']} months: {int(np.average(food_expenses_per_month))} kr.")
+        print(f"Average power expense over {config['Simulation steps']} months: {int(np.average(power_expenses_per_month))} kr. ")
+        print(f"Thermostat type: {config['Thermostat type']}")
+        print(f"Took {round(elapsed_time, 2)} seconds")
+    else:
+        print("Running simulation once...")
+        start_time = time.time()
+        values = cooler.simulate_month(True)
+        elapsed_time = time.time() - start_time
+
+        print(f"Food expense for the month: {int(np.sum(values[0]))} kr.")
+        print(f"Power expense for the month: {int(np.sum(values[1]))} kr.")
+        vis.plot_test(values[3], values[4], power_prices, values[2]) #[0:8640//2]
+        print(f"Thermostat type: {config['Thermostat type']}")
+        print(f"Took {round(elapsed_time, 2)} seconds")
