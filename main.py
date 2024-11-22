@@ -6,7 +6,8 @@ import yaml
 
 import numpy as np
 
-import cooler_instance as cc
+import cooler_instance as ci
+import thermostat as therm
 
 def load_config() -> dict:
     """
@@ -28,13 +29,13 @@ def load_power_prices() -> np.array:
     except (OSError, ValueError) as e:
         print(f"Error reading CSV: {e}")
 
-def instantiate_from_enum(enum_value: str) -> cc.CoolerInstance:
+def instantiate_thermostat_from_enum(enum_value: str) -> therm.Thermostat:
     """
     Points a string to a class definition.
     """
     try:
         # Get the Enum member by the string and get the associated class
-        thermostat_class = cc.ThermostatType[enum_value].value
+        thermostat_class = therm.ThermostatType[enum_value].value
         return thermostat_class
     except KeyError as exc:
         raise ValueError(f"Invalid ThermostatType: {enum_value}") from exc
@@ -45,14 +46,20 @@ if __name__ == "__main__":
     print("Reading power prices...")
     power_prices = load_power_prices()
 
-    print("Instantiating class...")
-    cooler = instantiate_from_enum(config["Thermostat type"])(power_prices)
+    print("Instantiating classes...")
+    thermostat = instantiate_thermostat_from_enum(config["Thermostat type"])()
+    cooler = ci.CoolerInstance(thermostat, power_prices)
 
     print(f"Running simulation for {config['Simulation steps']} steps (months)...")
-    expenses_per_month = np.zeros(config["Simulation steps"], dtype=float)
+    food_expenses_per_month = np.zeros(config["Simulation steps"], dtype=float)
+    power_expenses_per_month = np.zeros(config["Simulation steps"], dtype=float)
     counter = 0
     while counter < config["Simulation steps"]:
-        expenses_per_month[counter] = cooler.simulate_month()
+        values = cooler.simulate_month()
+        food_expenses_per_month[counter] = values[0]
+        power_expenses_per_month[counter] = values[1]
         counter += 1
 
-    print(f"Average expense over {config['Simulation steps']} months: {int(np.average(expenses_per_month))} kr. \n Thermostat type: {config['Thermostat type']}")
+    print(f"Average food expense over {config['Simulation steps']} months: {int(np.average(food_expenses_per_month))} kr.")
+    print(f"Average power expense over {config['Simulation steps']} months: {int(np.average(power_expenses_per_month))} kr. ")
+    print(f"Thermostat type: {config['Thermostat type']}")
