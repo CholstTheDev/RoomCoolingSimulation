@@ -57,14 +57,19 @@ class CoolerInstance():
         Calculates the current temperature, based on whether 
         the door is open and whether the compressor is on.
         """
-        door_open = self.is_door_open()
-        comp_on = self.thermostat_instance.evaluate_cooler_state(self)
-        last_temp = self.temperature_history[count-1]
-        if door_open and comp_on:
-            t = last_temp + (0.00003 * (20-last_temp) + 0.000008 * (-5 - last_temp)) * 300
-            #self.door_state_history[count] = True
-            self.power_expenses[count] = self.power_prices[count]
-            #self.compressor_state_history[count] = True
+        last_temp = self.temperature_history[count-1] # Get the last temperature
+
+        door_open = self.is_door_open() # Randomly decide if the door is open
+        comp_on = self.thermostat_instance.evaluate_cooler_state(self) # Evaluate whether the cooler should be on
+
+        # Decision tree looks like this for the sake of speed
+        # C1 and C2's values could simply be changed by the above functions,
+        # but on the scale of 1000s of simulations, it could make a difference.
+        if door_open and comp_on: # If both the door is open, and the compressor is on
+            t = last_temp + (0.00003 * (20-last_temp) + 0.000008 * (-5 - last_temp)) * 300 # Calculate the temperature as this
+            #self.door_state_history[count] = True # Add this to the history
+            #self.compressor_state_history[count] = True # And this
+            self.power_expenses[count] = self.power_prices[count] # Add the price of power at this moment to the history of prices
         elif door_open:
             t = last_temp + (0.00003 * (20-last_temp)) * 300
             self.power_expenses[count] = 0.0
@@ -79,10 +84,10 @@ class CoolerInstance():
             t = last_temp + (0.0000005 * (20-last_temp)) * 300
             self.power_expenses[count] = 0.0
 
-        self.temperature_history[count] = t
-        self.current_temperature = t
+        self.temperature_history[count] = t # Add the temperature to the temperature history
+        self.current_temperature = t # Set the current temperature to the new calculated temperature
 
-        self.food_loss_expenses[count] = self.calculate_food_loss_expense(t)
+        self.food_loss_expenses[count] = self.calculate_food_loss_expense(t) # Calculate and add the price of food loss for this tick
 
     def calculate_food_loss_expense(self, temp):
         """

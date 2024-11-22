@@ -3,11 +3,13 @@ This program runs a simulation
 """
 import doctest
 import yaml
+import time
 
 import numpy as np
 
 import cooler_instance as ci
 import thermostat as therm
+#import visualisation as vis
 
 def load_config() -> dict:
     """
@@ -47,19 +49,22 @@ if __name__ == "__main__":
     power_prices = load_power_prices()
 
     print("Instantiating classes...")
-    thermostat = instantiate_thermostat_from_enum(config["Thermostat type"])()
+    thermostat = instantiate_thermostat_from_enum(config["Thermostat type"])(config)
     cooler = ci.CoolerInstance(thermostat, power_prices)
 
     print(f"Running simulation for {config['Simulation steps']} steps (months)...")
     food_expenses_per_month = np.zeros(config["Simulation steps"], dtype=float)
     power_expenses_per_month = np.zeros(config["Simulation steps"], dtype=float)
+    start_time = time.time()
     counter = 0
     while counter < config["Simulation steps"]:
         values = cooler.simulate_month()
         food_expenses_per_month[counter] = values[0]
         power_expenses_per_month[counter] = values[1]
         counter += 1
+    elapsed_time = time.time() - start_time
 
     print(f"Average food expense over {config['Simulation steps']} months: {int(np.average(food_expenses_per_month))} kr.")
     print(f"Average power expense over {config['Simulation steps']} months: {int(np.average(power_expenses_per_month))} kr. ")
     print(f"Thermostat type: {config['Thermostat type']}")
+    print(f"Took {elapsed_time.__round__(2)} seconds")
