@@ -45,7 +45,7 @@ def instantiate_thermostat_from_enum(enum_value: str) -> therm.Thermostat:
 if __name__ == "__main__":
     print("Reading config from config.yaml...")
     config = load_config() # Loads 'config.yaml'
-    
+
     print("Reading power prices...")
     power_prices = load_power_prices()
 
