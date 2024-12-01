@@ -1,14 +1,12 @@
-doctest: "Test string"
-
 simulate_multiple_months: FALSE # if true, the simulation will be repeated for [simulation steps] times
-simulation_steps: 100 # The amount of months to be simulated
-comparison_simulation: TRUE
+simulation_steps: 100 # The amount of months to be simulated, if [simulate_multiple_months] is TRUE
+comparison_simulation: TRUE # if true, two simulations will be run and compared
 
 thermostat_type: "SIMPLE" # The type of thermostat to be used
 second_thermostat_type: "PEERREVIEW" # The type of thermostat to be used when comparing two thermostats
 
 ############################
-##### Thermostat types ##### Insert the titles in the above "Thermostat type" field
+##### Thermostat types #####   Insert the titles in the above "Thermostat type" field
 ############################
 
 # # # SIMPLE
