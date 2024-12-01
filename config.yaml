@@ -1,23 +1,34 @@
 doctest: "Test string"
-Thermostat type: "PARTITION" # Supports: "SIMPLE", ""
-Multisim: False
-Simulation steps: 100
 
-SIMPLE: # The basic thermostat, turns on when the temperature is above 5 degrees
-  TEMP: 6 # Set at 6 degrees, they are within the budget
+simulate_multiple_months: FALSE # if true, the simulation will be repeated for [simulation steps] times
+simulation_steps: 100 # The amount of months to be simulated
+comparison_simulation: TRUE
 
-OPPORTUNIST: # Supercools the room to LOW_TEMP if power costs less than PRICE_OPPORTUNITY_THRESHOLD. Will turn on at HIGH_TEMP.
-  LOW_TEMP: 3.6
-  HIGH_TEMP: 6.37
-  PRICE_OPPORTUNITY_THRESHOLD: 2
+thermostat_type: "SIMPLE" # The type of thermostat to be used
+second_thermostat_type: "PEERREVIEW" # The type of thermostat to be used when comparing two thermostats
 
-BARGAIN: # Just buys whenever power is cheaper than PRICE_THRESHOLD. VERY bad.
-  PRICE_THRESHOLD: 1.5
+############################
+##### Thermostat types ##### Insert the titles in the above "Thermostat type" field
+############################
 
-DESPERATION:
+# # # SIMPLE
+# Simple thermostat that always accepts the new configuration
 
-DESPERATION_OPPORTUNIST:
+# # # OPPORTUNIST 
+# Thermostat that buys cheap energy
 
-WATCHER:
+# # # DESPERATION 
+# Thermostat that becomes willing to spend more money on energy the higher the temperature is
 
-PEERREVIEW:
+# # # DESPERATION_OPPORTUNIST
+# Thermostat that buys cheap energy and becomes willing to spend more money on energy the higher the temperature is
+
+# # # PEERREVIEW
+# Thermostat that buys energy if it is cheaper than the averate around it.
+
+# # # PARTITION
+# Thermostat that buys all the cheapest energy within a specified ranges
+
+# # # DESPERATION_EXPONENTIAL
+# Thermostat that becomes willing to spend more money on energy the higher the temperature is, exponentially
+

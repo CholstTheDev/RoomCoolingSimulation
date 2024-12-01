@@ -1,2 +1,5 @@
 PyYAML
 numpy
+matplotlib
+seaborn
+pytest

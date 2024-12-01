@@ -3,7 +3,6 @@ Holds the abstract class "thermostats", from which all thermostat types inherit.
 """
 from enum import Enum
 from abc import ABC, abstractmethod
-import math
 
 import numpy as np
 
@@ -15,8 +14,8 @@ class Thermostat(ABC):
     """
     Thermostat base class.
     """
-    def __init__(self, config: dict):
-        self.config = config
+    def __init__(self):
+        pass
 
     @abstractmethod
     def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
@@ -27,63 +26,51 @@ class SimpleThermostat(Thermostat):
     """
     Control mode: if the room temperature is above 5 degrees, turn on the compressor
     """
-
     def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
-        return room.current_temperature > self.config["SIMPLE"]["TEMP"]
+        return room.current_temperature > 5
 
 class OpportunistThermostat(Thermostat):
     """
     More likely to keep cooling when the price is low. Doesn't cool below 3.5 degrees.
     Turns on no matter what when temperature exceeds a threshold.
     """
-    def __init__(self, config: dict):
-        self.config = config
-        self.price_threshold = self.config["OPPORTUNIST"]["PRICE_OPPORTUNITY_THRESHOLD"]
-        self.highest_allowed_temp = self.config["OPPORTUNIST"]["HIGH_TEMP"]
-        self.lowest_allowed_temp = self.config["OPPORTUNIST"]["LOW_TEMP"]
+    def __init__(self):
+        self.price_threshold = 2
 
 
     def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
-        if room.power_prices[room.tick_counter] < self.price_threshold and room.current_temperature > self.lowest_allowed_temp:
+        if room.current_temperature > 6.3:
+            return True
+        elif room.current_temperature < 3.5:
+            return False
+        
+        if room.power_prices[room.tick_counter] < self.price_threshold:
             #print(f"Bargain! {room.power_prices[room.tick_counter]}")
             return True
-        return room.current_temperature >= self.highest_allowed_temp
+        else:
+            return False
 
-class BargainThermostat(Thermostat):
-    """
-    This thermostat loves cheap energy, always turns on when it is cheap
-    """
-    def __init__(self, config: dict):
-        self.config = config
-        self.price_threshold = self.config["BARGAIN"]["PRICE_THRESHOLD"]
-
-    def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
-        return room.power_prices[room.tick_counter] < self.price_threshold
 
 class DesperationThermostat(Thermostat):
     """
-    This thermostat gets desperate when when the temperature becomes too high, and becomes more willing to buy expensive power
+    This thermostat gets desperate when when the temperature becomes too high, and becomes more willing to buy expensive power.
     """
-    def __init__(self, config: dict):
-        self.config = config
-
+    def __init__(self):
         self.lowest_temperature = 3.5
         self.highest_temperature = 6.375
 
         self.lowest_price = 0.015
-        self.highest_price = 3 #Max value in set: 5.429 
+        self.highest_price = 4 #Max value in set: 5.429 
 
     def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
         price_point = (room.current_temperature - self.lowest_temperature) / (self.highest_temperature - self.lowest_temperature) * (self.highest_price - self.lowest_price) + self.lowest_price
-        return room.power_prices[room.tick_counter] < price_point
+        return room.power_prices[room.tick_counter] <= price_point
 
 class DesperationOpportunistThermostat(Thermostat):
     """
-    This thermostat mixes the DESPERATION thermostat and the OPPORTUNIST thermostat
+    This thermostat mixes the DESPERATION thermostat and the OPPORTUNIST thermostat.
     """
-    def __init__(self, config: dict):
-        self.config = config
-
+    def __init__(self):
         self.lowest_temperature = 3.5
         self.highest_temperature = 6.375
 
@@ -91,109 +78,47 @@ class DesperationOpportunistThermostat(Thermostat):
         self.highest_price = 3 #Max value in set: 5.429 
 
     def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
+        if room.current_temperature > 6.375:
+            return True
+        elif room.current_temperature < 3.5:
+            return False
+        
         price_point = (room.current_temperature - self.lowest_temperature) / (self.highest_temperature - self.lowest_temperature) * (self.highest_price - self.lowest_price) + self.lowest_price
         
-        if (room.power_prices[room.tick_counter] < 0.5 and room.current_temperature > self.lowest_temperature):
-            return True
-        elif room.current_temperature > 6.375:
+        if room.power_prices[room.tick_counter] < 0.5:
             return True
         else:
             return room.power_prices[room.tick_counter] < price_point
 
-class WatcherThermostat(Thermostat):
-    """
-    This thermostat mixes the DESPERATION thermostat and the OPPORTUNIST thermostat
-    """
-    def __init__(self, config: dict):
-        self.config = config
-
-        self.lowest_temperature = 3.5
-        self.highest_temperature = 6.5
-
-        self.look_around = 5
-        self.max_diff = 0.06
-
-        self.lowest_price = 0.015
-        self.highest_price = 3 #Max value in set: 5.429 
-
-    def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
-        #desperation_value = (room.current_temperature - self.lowest_temperature) / (self.highest_temperature - self.lowest_temperature) * 2
-        if room.current_temperature > 6.375:
-            return True
-        
-        current_price = room.power_prices[room.tick_counter]
-        price_point = (room.current_temperature - self.lowest_temperature) / (self.highest_temperature - self.lowest_temperature) * (self.highest_price - self.lowest_price) + self.lowest_price
-        average_next_prices = np.average(room.power_prices[room.tick_counter:room.tick_counter + self.look_around])
-        average_previous_prices = np.average(room.power_prices[room.tick_counter - self.look_around:room.tick_counter])
-        diff = average_next_prices - average_previous_prices
-        
-        
-        if average_next_prices > current_price and average_previous_prices > current_price:
-            print("I am at a hole!")
-            print(f"diff: {diff}")
-            return True
-        
-        if room.power_prices[room.tick_counter] < price_point and room.current_temperature > 3.5:
-            #print(f"Bargain! {room.power_prices[room.tick_counter]}")
-            return True
-        
-        return False
-
 class PeerReviewThermostat(Thermostat):
     """
-    This thermostat mixes the DESPERATION thermostat and the OPPORTUNIST thermostat
+    This thermostat that buys if it is the lowest in the group of prices around it
     """
-    def __init__(self, config: dict):
-        self.config = config
-
-        self.lowest_temperature = 3.5
-        self.highest_temperature = 6.375
-
-        self.look_around = 5
-        self.max_diff = 0.06
-
-        self.lowest_price = 0.015
-        self.highest_price = 2.5 #Max value in set: 5.429 
+    def __init__(self):
+        self.look_around = 245
 
     def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
-        #desperation_value = (room.current_temperature - self.lowest_temperature) / (self.highest_temperature - self.lowest_temperature) * 2
-        if room.current_temperature > 6.3:
+        if room.current_temperature > 6.34:
             return True
-        average_peer_prices = np.average(room.power_prices[room.tick_counter - self.look_around:room.tick_counter + self.look_around])
-        current_price = room.power_prices[room.tick_counter]
-        price_point = (room.current_temperature - self.lowest_temperature) / (self.highest_temperature - self.lowest_temperature) * (self.highest_price - self.lowest_price) + self.lowest_price
-        average_next_prices = np.average(room.power_prices[room.tick_counter:room.tick_counter + self.look_around])
-        average_previous_prices = np.average(room.power_prices[room.tick_counter - self.look_around:room.tick_counter])
-        diff = average_next_prices - average_previous_prices
-        
-        if current_price < average_peer_prices and room.current_temperature > 3.5:
+        elif room.current_temperature < 3.5:
+            return False
+        low_check = max(0, room.tick_counter - self.look_around)
+        hich_check = min(8640, room.tick_counter + self.look_around)
+        average_peer_prices = np.mean(room.power_prices[low_check:hich_check])
+        current_price = room.power_prices[room.tick_counter]        
+        if current_price < average_peer_prices:
             return True
-        elif current_price < price_point:
-            return True
-        return False
-        
-        if average_next_prices > current_price and average_previous_prices > current_price:
-            print("I am at a hole!")
-            print(f"diff: {diff}")
-            return True
-        
-        if room.power_prices[room.tick_counter] < price_point and room.current_temperature > 3.5:
-            #print(f"Bargain! {room.power_prices[room.tick_counter]}")
-            return True
-        
         return False
 
 class PartitionThermostat(Thermostat):
     """
-    Buys all the cheapest power, within the partition
+    Buys all the cheapest power, within the partition. If partitio_count = 10, it will buy the cheapest x amount of power
     """
-    def __init__(self, config: dict):
-        self.config = config
-
-        self.partition_count = 10
+    def __init__(self):
+        self.partition_count = 50
         self.partition_size = 8640 / self.partition_count
 
-        self.purchase_per_partition =350
+        self.purchase_per_partition =60
 
     def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
         if room.current_temperature > 6.2:
@@ -224,6 +149,32 @@ class PartitionThermostat(Thermostat):
 
         return False
 
+class DesperationExponentialThermostat(Thermostat):
+    """
+    Desperation opportunist with an exponential twist
+    """
+    def __init__(self):
+        self.lowest_temperature = 3.5
+        self.highest_temperature = 6
+
+        self.lowest_price = 0.015
+        self.highest_price = 5.429 
+
+        self.b = 5.891460032803241 # b = np.log(5.429/0.015)
+        self.steepness = 0.8
+
+
+    def evaluate_cooler_state(self, room: "cooler_instance.CoolerInstance") -> bool:
+        if room.current_temperature > self.highest_temperature:
+            return True
+        elif room.current_temperature < self.lowest_temperature:
+            return False
+        
+        desperation_value = (room.current_temperature - self.lowest_temperature) / (self.highest_temperature - self.lowest_temperature)
+        price_point = self.lowest_price * np.exp(self.b * self.steepness * desperation_value)
+        current_price = room.power_prices[room.tick_counter]
+
+        return current_price <= price_point
 
 
 class ThermostatType(Enum):
@@ -232,10 +183,9 @@ class ThermostatType(Enum):
     """
     SIMPLE = SimpleThermostat
     OPPORTUNIST = OpportunistThermostat
-    BARGAIN = BargainThermostat
     DESPERATION = DesperationThermostat
     DESPERATION_OPPORTUNIST = DesperationOpportunistThermostat
-    WATCHER = WatcherThermostat
     PEERREVIEW = PeerReviewThermostat
     PARTITION = PartitionThermostat
+    DESPERATION_EXPONENTIAL = DesperationExponentialThermostat
 
