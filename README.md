@@ -18,7 +18,7 @@ In your terminal, run these commands in the project directory:
 
 ```sh
 python -m venv venv # makes the virtual environment (venv)
-source venv\bin\activate # activates the virtual environment (venv)
+source venv/bin/activate # activates the virtual environment (venv)
 pip install -r requirements.txt
 ```
 
